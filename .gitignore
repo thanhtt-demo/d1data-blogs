@@ -1,0 +1,6 @@
+# exclude public folder
+public/
+**/public/
+
+blogs/public/*
+**/resources/_gen/
