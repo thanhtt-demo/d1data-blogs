@@ -5,3 +5,9 @@ Install via https://go.dev/doc/install
 
 choco install sass
 choco install hugo-extended
+
+# Run the hugo server
+
+cd blogs/
+
+hugo server

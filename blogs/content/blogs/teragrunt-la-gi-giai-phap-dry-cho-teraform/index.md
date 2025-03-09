@@ -1,7 +1,7 @@
 +++
 title = 'Terragrunt là gì? Giải pháp DRY cho Terraform, thoát khỏi ác mộng Copy-Paste'
 math = true
-date = 2024-09-24T02:09:53Z
+date = 2025-03-08T17:09:53Z
 draft = false
 series = ["Terragrunt"]
 series_order = 1
@@ -31,7 +31,6 @@ Vừa bực bội vừa hoang mang, cậu lao đầu đi tìm hiểu từ google
 - ✔️ Không còn copy-paste hàng trăm lần để tạo các services tương tự nhau.
 - ✔️ Quản lý multi-environment dễ dàng, nhất quán hơn.
 - ✔️ Terraform modules trở nên gọn gàng, không bừa bộn.
-- ✔️ Quan trọng nhất: KHÔNG CÒN OT!
 
 Sau đây, là những gì cậu đã học được - những kinh nghiệm xương máu giúp bạn deploy infra một cách dễ dàng hơn với Terragrunt, cuối serial bài viết này là một demo về cách sử dụng terragrut trong môi trường doanh nghiệp lớn.
 
@@ -78,55 +77,44 @@ terragrunt --version
 
 ![alt text](install_terragrunt.png)
 
-## Cấu trúc thư mục ([Best practice](https://docs.gruntwork.io/2.0/docs/overview/concepts/infrastructure-live))
+## Cấu trúc thư mục
 
-Đây là cấu trúc thư mục được khuyến nghị khi sử dụng Terragrunt, về cơ bản dự án của mình cũng follow theo phương án tổ chức này:
+Mục tiêu của việc định nghĩa cấu trúc thư mục cho Terragrunt là giúp bạn quản lý codebase Terraform một cách dễ dàng, dễ bảo trì, và dễ mở rộng. Dưới đây là cấu trúc thư mục mà mình thấy phù hợp cho một dự án, tuy nhiên bạn có thể tùy chỉnh theo ý muốn của mình.
 
 ```bash
-account(1.)
- └ _global(2.1)
- └ region(2.2)
-    └ _global(3.1)
-    └ environment(3.2)
-       └ category(4)
-          └ resource(5)
+root/
+├── prod
+├── stage
+└── dev
+     ├── global
+     ├── ap-southeast-1
+          ├── vpc
+          ├── s3
+          │    ├── bucket-1
+          │    └── bucket-2
+          ├── ec2
+          │    ├── server-1
+          │    └── server-2
+          └── database
+               └── db-1
+               └── db-2
 ```
 
-### 1. Accounts
+Với cách sắp xếp như trên, khi nhìn vào thư mục `dev`, bạn sẽ thấy tất cả các resources của môi trường dev, và tương tự cho `stage`, `prod`.
+Biết ngay các resources được deploy trên region nào.
 
-Root level là `account`, đại diện cho 1 account AWS, thông thường đa phần các tổ chức sẽ deploy non-prod(dev, stage...) trên cùng 1 account AWS, và prod trên account riêng.
+- Thư mục `global` chứa các global services như IAM, Route53, CloudFront, WAF...
+- Thư mục `ap-southeast-1` chứa các resources deploy trên region `ap-southeast-1`.
+- Các thư mục con chứa các resources cụ thể như VPC, S3, EC2, RDS... mỗi resource là một sub folder.
 
-### 2.1. _global
+Một số tổ chức bỏ qua folder `region` vì họ chỉ sử dụng 1 region duy nhất, nhưng mình khuyến nghị nên tạo folder `region` vì sau này biết đâu tổ chức sẽ deploy services nào đó trên region khác, hoặc cần migration services về region Thái Lan chẳng hạn 🤣
 
-_global folder để chứa các config chung cho các services không chia region như IAM role, Route53, CloudTrail...
-
-### 2.2. Regions
-
-Folder `region` chứa file config cho từng region mà bạn sử dụng. Ví dụ, `ap-southeast-1` và `us-west-2`.
-Một số tổ chức bỏ qua folder `region` vì họ chỉ sử dụng 1 region duy nhất, nhưng mình khuyến nghị nên tạo folder `region` vì sau này biết đâu sẽ có region Việt Nam, hoặc chuyển về region Thái Lan 🤣
-
-### 3.1. _global(across environments)
-
-_global(across environments) chứa các config chung cho các services có thể dùng chung cho môi trường dev, staging... như SNS, ECR...
-Cái này cũng tùy tổ chức muốn dùng chung các services gì, ví dụ có tổ chức non-prod(dev, stage) dùng chung 1 database cho tiết kiệm chi phí.
-
-### 3.2. Environments
-
-Sub-folder `environment` chứa các config cho từng môi trường (dev, staging, prod). Mỗi môi trường sẽ có các config riêng như cấu hình ec2, rds, s3, vpc, subnet, security group, etc. nên sẽ tách riêng cho từng môi trường.
-
-### 4. Categories
-
-Sub-folder `category` dùng để gom nhóm các resources cùng loại với nhau như:
+Một số tổ chức có thể chia thư mục theo `category` như Networking, Compute, Storage... nhưng các dự án mình đã triển khai không chia category vì mình thấy không cần thiết.
+Ví dụ nếu chiase theo category, thì có thể chia như sau:
 
 - Networking: VPC, Subnet, Route53, Security Group...
 - Compute: EC2, ECS...
 - Storage: S3, EBS...
-
-Cũng tùy team, team mình không chia category.
-
-### 5 Resources
-
-Cuối cùng, sub-folder `resource` chứa các resources cụ thể như S3 bucket, IAM role, Glue job, Lambda function...
 
 ## Ví dụ cụ thể
 
@@ -137,37 +125,4 @@ Dưới đây là ví dụ cụ thể triển khai 1 account AWS với:
 - môi trường prod
 - sử dụng 3 services `s3`, `glue`, `iam`
 
-```bash
-non-prod
- └ ap-southeast-1
-    └ dev
-       └ s3
-            └ bucket_data
-            └ bucket_logs
-       └ glue
-            └ job_1
-            └ job_2
-       └ iam
-          └ role
-    └ stage
-       └ s3
-            └ bucket_data
-            └ bucket_logs
-       └ glue
-            └ job_1
-            └ job_2
-       └ iam
-          └ role
-prod
- └ ap-southeast-1
-    └ prod
-       └ s3
-            └ bucket_data
-            └ bucket_logs
-       └ glue
-            └ job_1
-            └ job_2
-       └ iam
-          └ role
-```
-
+![alt text](sample-terragrunt-dir.png)
