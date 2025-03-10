@@ -87,6 +87,7 @@ root/
 ├── stage
 └── dev
      ├── global
+          ├── iam
      ├── ap-southeast-1
           ├── vpc
           ├── s3
@@ -120,9 +121,14 @@ Ví dụ nếu chiase theo category, thì có thể chia như sau:
 
 Dưới đây là ví dụ cụ thể triển khai 1 account AWS với:
 
-- 1 region `ap-southeast-1`
-- môi trường non-prod bao gồm `dev`, `stage`
-- môi trường prod
-- sử dụng 3 services `s3`, `glue`, `iam`
+- Hầu hết sử dụng các services trên region `ap-southeast-1`
+- Source code deploy môi trường dev và prod
+- Mục đích là deploy các resources: `iam`, `vpc`, `sg`, `ec2`
 
 ![alt text](sample-terragrunt-dir.png)
+
+Anh em có thể clone source code từ [đây](https://github.com/thanhtt-demo/d1data-tfr-infras.git) và đọc qua code, bài tiếp theo mình sẽ giải thích từng thành phân trong code nhé.
+
+```shell
+git clone https://github.com/thanhtt-demo/d1data-tfr-infras.git
+```
